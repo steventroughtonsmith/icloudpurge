@@ -10,7 +10,7 @@
 
 void usage()
 {
-	printf("Usage: icloudpurge /path/to/purge\n\n");
+	printf("Usage: icloudpurge [-f] /path/to/purge\n\n");
 }
 
 int main(int argc, const char * argv[]) {
@@ -20,38 +20,52 @@ int main(int argc, const char * argv[]) {
 		
 		if (argc > 1)
 		{
-			NSString *destpath = [[NSString alloc] initWithUTF8String:argv[1]];
+			int pathIdx = 1;
+			BOOL confirm = YES;
+			
+			if (argc > 2)
+			{
+				pathIdx = 2;
+				confirm = NO;
+			}
+			
+			NSString *destpath = [[NSString alloc] initWithUTF8String:argv[pathIdx]];
 			
 			if ([[NSFileManager defaultManager] fileExistsAtPath:destpath isDirectory:nil])
 			{
-				printf("Really purge %s? y/N ", [destpath UTF8String]);
-				scanf("%c", s);
-				
-				if (s[0] == 'y')
+				if (confirm)
 				{
-					printf("Purging…\n");
-					NSError *error = nil;
-
-					[[NSFileManager defaultManager] evictUbiquitousItemAtURL:[NSURL fileURLWithPath:destpath] error:&error];
+					printf("Really purge %s? y/N ", [destpath UTF8String]);
+					scanf("%c", s);
 					
-					if (error)
+					if (s[0] != 'y')
 					{
-						NSLog(@"%@", [error localizedDescription]);
 						return -1;
 					}
+				}
+				
+				printf("Purging %s…\n", [destpath UTF8String]);
+				NSError *error = nil;
+				
+				[[NSFileManager defaultManager] evictUbiquitousItemAtURL:[NSURL fileURLWithPath:destpath] error:&error];
+				
+				if (error)
+				{
+					printf("%s", [[error localizedDescription] UTF8String]);
+					return -1;
 				}
 				
 				return 0;
 			}
 			else
 			{
-				printf("Path not found.\n");
+				printf("Path %s not found.\n", [destpath UTF8String]);
 				return -1;
 			}
 		}
 	}
 	
 	usage();
-
+	
 	return -1;
 }
